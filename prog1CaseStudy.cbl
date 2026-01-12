@@ -1,0 +1,81 @@
+IDENTIFICATION DIVISION.
+PROGRAM-ID. PR.
+AUTHOR. GROUPGUPITPROG1.
+
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT EMPLOYEE-FILE
+        ASSIGN TO "EMPLOYEE.DAT"
+        ORGANIZATION IS LINE SEQUENTIAL.
+
+DATA DIVISION.
+FILE SECTION.
+FD EMPLOYEE-FILE.
+01 EMP-PAYROLL.
+    05 EMP-TYPE      PIC X(20).
+    05 B-PAY         PIC 9(7)V99.
+    05 ALLOWANCE     PIC 9(7)V99.
+    05 GROSS-PAY     PIC 9(7)V99.
+    05 DEDUCTION     PIC 9(7)V99.
+    05 NET-PAY       PIC 9(7)V99.
+
+WORKING-STORAGE SECTION.
+01 WS-FLAGS.
+    05 WS-EOF PIC X VALUE 'N'.
+    88 END-OF-FILE VALUE 'Y'.
+
+01 I PIC 9(2).
+01 J PIC 9(4).
+
+01 EMP-TYPE-NAMES.
+    05 EMP-NAME PIC X(20) OCCURS 4 TIMES
+    VALUE 
+        "Faculty"
+        "Administrative"
+        "Utility"
+        "Security".
+
+01 NO-EMP PIC 9(4).
+
+PROCEDURE DIVISION.
+MAIN-PARA.
+    OPEN OUTPUT EMPLOYEE-FILE
+    PERFORM VARYING I FROM 1 BY 1 UNTIL I > 4
+        DISPLAY "ENTER NUMBER OF EMPLOYEES FOR " EMP-NAME(I) ": "
+        ACCEPT NO-EMP
+        PERFORM VARYING J FROM 1 BY 1 UNTIL J > NO-EMP
+            MOVE EMP-NAME(I) TO EMP-TYPE
+            DISPLAY "ENTER BASIC PAY: "
+            ACCEPT B-PAY
+            PERFORM CALCULATE-PAY
+            WRITE EMP-PAYROLL
+        END-PERFORM
+    END-PERFORM
+    CLOSE EMPLOYEE-FILE
+
+    PERFORM READ-FILE
+    STOP RUN.
+
+CALCULATE-PAY.
+    COMPUTE ALLOWANCE = B-PAY * 0.10
+    COMPUTE GROSS-PAY = B-PAY + ALLOWANCE
+    COMPUTE DEDUCTION = GROSS-PAY * 0.12
+    COMPUTE NET-PAY = GROSS-PAY - DEDUCTION.
+
+READ-FILE.
+    OPEN INPUT EMPLOYEE-FILE
+    PERFORM UNTIL END-OF-FILE
+        READ EMPLOYEE-FILE
+            AT END SET END-OF-FILE TO TRUE
+            NOT AT END
+                DISPLAY "---------------------------------------------------------------------------------------------------------- ". 
+                DISPLAY "                                   ABCDEF TECHNOLOGY COMPANY". 
+                DISPLAY "                                      EMPLOYEE PAYROLL". 
+                DISPLAY " EMPLOYEE    TYPE NO.     OF EMPLOYEES      BASIC PAY      ALLOWANCE      GROSS PAY      DEDUCTION NET PAY ". 
+                OPEN INPUT EMPLOYEE-FILE. 
+                READ EMPLOYEE-FILE AT END MOVE 'Y' TO WS-EOF END-READ 
+                DISPLAY "---------------------------------------------------------------------------------------------------------- ".
+        END-READ
+    END-PERFORM
+    CLOSE EMPLOYEE-FILE.
