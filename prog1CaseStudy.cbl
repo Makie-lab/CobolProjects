@@ -21,39 +21,55 @@ FD EMPLOYEE-FILE.
     05 NET-PAY       PIC 9(7)V99.
 
 WORKING-STORAGE SECTION.
+01 EMP-TYPE-NAMES.
+    05 EMP-NAME PIC X(20) OCCURS 4 TIMES.
+
 01 WS-FLAGS.
     05 WS-EOF PIC X VALUE 'N'.
     88 END-OF-FILE VALUE 'Y'.
 
-01 I PIC 9(2).
-01 J PIC 9(4).
+01 TOTALS.
+    05 TOT-EMP-COUNT   PIC 9(5) VALUE 0.
+    05 TOT-BASIC-ALL   PIC 9(9)V99 VALUE 0.
 
-01 EMP-TYPE-NAMES.
-    05 EMP-NAME PIC X(20) OCCURS 4 TIMES
-    VALUE 
-        "Faculty"
-        "Administrative"
-        "Utility"
-        "Security".
+01 BASIC-PAY-PER-TYPE.
+    05 BASIC-TOTAL PIC 9(9)V99 OCCURS 4 TIMES VALUE 0.
 
 01 NO-EMP PIC 9(4).
+01 I PIC 9.
+01 J PIC 9(4).
+
+01 DISP-NO-EMP PIC ZZZ.
+01 DISP-AMOUNT PIC Z,ZZZ,ZZZ.99.
 
 PROCEDURE DIVISION.
 MAIN-PARA.
     OPEN OUTPUT EMPLOYEE-FILE
+    
+    MOVE "Faculty"        TO EMP-NAME(1)
+    MOVE "Administrative" TO EMP-NAME(2)
+    MOVE "Utility"        TO EMP-NAME(3)
+    MOVE "Security"       TO EMP-NAME(4)
+
     PERFORM VARYING I FROM 1 BY 1 UNTIL I > 4
         DISPLAY "ENTER NUMBER OF EMPLOYEES FOR " EMP-NAME(I) ": "
         ACCEPT NO-EMP
+
         PERFORM VARYING J FROM 1 BY 1 UNTIL J > NO-EMP
             MOVE EMP-NAME(I) TO EMP-TYPE
             DISPLAY "ENTER BASIC PAY: "
             ACCEPT B-PAY
+
+            ADD 1 TO TOT-EMP-COUNT
+            ADD B-PAY TO TOT-BASIC-ALL
+            ADD B-PAY TO BASIC-TOTAL(I)
+
             PERFORM CALCULATE-PAY
             WRITE EMP-PAYROLL
         END-PERFORM
     END-PERFORM
-    CLOSE EMPLOYEE-FILE
 
+    CLOSE EMPLOYEE-FILE
     PERFORM READ-FILE
     STOP RUN.
 
@@ -64,18 +80,46 @@ CALCULATE-PAY.
     COMPUTE NET-PAY = GROSS-PAY - DEDUCTION.
 
 READ-FILE.
+    MOVE 'N' TO WS-EOF
     OPEN INPUT EMPLOYEE-FILE
+
+    DISPLAY " "
+    DISPLAY "                 ABCDEF TECHNOLOGY COMPANY"
+    DISPLAY " "
+    DISPLAY "                       EMPLOYEE PAYROLL"
+    DISPLAY " "
+    DISPLAY "EMPLOYEE TYPE     NO. OF EMPLOYEES    BASIC PAY    ALLOWANCE    GROSS PAY     DEDUCTION      NET PAY"
+    DISPLAY "-----------------------------------------------------------------------------------------------"
+
     PERFORM UNTIL END-OF-FILE
         READ EMPLOYEE-FILE
-            AT END SET END-OF-FILE TO TRUE
+            AT END
+                SET END-OF-FILE TO TRUE
             NOT AT END
-                DISPLAY "---------------------------------------------------------------------------------------------------------- ". 
-                DISPLAY "                                   ABCDEF TECHNOLOGY COMPANY". 
-                DISPLAY "                                      EMPLOYEE PAYROLL". 
-                DISPLAY " EMPLOYEE    TYPE NO.     OF EMPLOYEES      BASIC PAY      ALLOWANCE      GROSS PAY      DEDUCTION NET PAY ". 
-                OPEN INPUT EMPLOYEE-FILE. 
-                READ EMPLOYEE-FILE AT END MOVE 'Y' TO WS-EOF END-READ 
-                DISPLAY "---------------------------------------------------------------------------------------------------------- ".
+                MOVE 1 TO DISP-NO-EMP
+                MOVE B-PAY TO DISP-AMOUNT
+
+                DISPLAY EMP-TYPE "     "
+                        DISP-NO-EMP "            "
+                        DISP-AMOUNT "    "
+                        DISP-AMOUNT "    "
+                        DISP-AMOUNT "    "
+                        DISP-AMOUNT "    "
+                        DISP-AMOUNT
         END-READ
     END-PERFORM
+
+    DISPLAY "-----------------------------------------------------------------------------------------------"
+
+    MOVE TOT-EMP-COUNT TO DISP-NO-EMP
+    MOVE TOT-BASIC-ALL TO DISP-AMOUNT
+
+    DISPLAY "TOTAL             "
+            DISP-NO-EMP "            "
+            DISP-AMOUNT "    "
+            DISP-AMOUNT "    "
+            DISP-AMOUNT "    "
+            DISP-AMOUNT "    "
+            DISP-AMOUNT
+
     CLOSE EMPLOYEE-FILE.
